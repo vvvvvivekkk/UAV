@@ -17,6 +17,7 @@ try:
     while True:
         command = input().strip().lower()
 
+        # X: exit the loop. T: take off, but only if grounded and battery >= 10%.
         if command == "x":
             break
 
@@ -60,8 +61,11 @@ except Exception as e:
     print("Error:", e)
 
 finally:
+    # Always runs, even if something above fails.
     try:
+        # Land first if we took off or the drone is still in the air.
         if needs_landing or tello.is_flying:
             tello.land()
     finally:
+        # Release the connection no matter what, so resources are freed.
         tello.end()
