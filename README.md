@@ -48,9 +48,26 @@ cp .env.example .env
 The Tello creates its own Wi-Fi network, so no IP is needed by default.
 `.env` is git-ignored so your settings stay local.
 
+## Connect to the drone's Wi-Fi
+
+The Tello has no internet — it is its own Wi-Fi access point, and your computer
+must join that network before `main.py` can talk to it.
+
+1. Press the **power button** on the side of the Tello once. The status light
+   blinks yellow when it is ready.
+2. On your computer, open **Wi-Fi settings**:
+   - **Windows:** click the Wi-Fi icon in the taskbar (bottom-right).
+   - **macOS:** click the Wi-Fi icon in the menu bar (top-right).
+3. Select the network named **`TELLO-XXXXXX`** (the X's are your drone's ID).
+   It is **open — no password**.
+4. Wait until it shows **Connected** (you will have no internet while on it —
+   that is normal).
+5. Only one computer can control the drone at a time, so make sure no one else
+   is connected to the same Tello.
+
 ## Run
 
-1. Turn on the Tello and connect your computer to its **Wi-Fi** (TELLO-XXXXXX).
+1. Make sure you are connected to the Tello's Wi-Fi (see above).
 2. Run:
 ```
 python main.py

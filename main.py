@@ -60,6 +60,8 @@ except Exception as e:
     print("Error:", e)
 
 finally:
-    if needs_landing:
-        tello.land()
-    tello.end()
+    try:
+        if needs_landing or tello.is_flying:
+            tello.land()
+    finally:
+        tello.end()
