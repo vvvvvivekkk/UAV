@@ -27,7 +27,32 @@ try:
             else:
                 print("Battery below 10%. Please charge first.")
 
-        # more commands (L, W/S, A/D, R/F, Q/E) go here when you send the next photo
+        elif command == "l" and tello.is_flying:
+            tello.land()
+            needs_landing = False
+
+        # Move 30 cm per command. These calls block until the move finishes.
+        elif command == "w" and tello.is_flying:
+            tello.move_forward(30)
+        elif command == "s" and tello.is_flying:
+            tello.move_back(30)
+        elif command == "a" and tello.is_flying:
+            tello.move_left(30)
+        elif command == "d" and tello.is_flying:
+            tello.move_right(30)
+        elif command == "r" and tello.is_flying:
+            tello.move_up(30)
+        elif command == "f" and tello.is_flying:
+            tello.move_down(30)
+
+        # Turn 30 degrees per command. These also block until the turn finishes.
+        elif command == "q" and tello.is_flying:
+            tello.rotate_counter_clockwise(30)
+        elif command == "e" and tello.is_flying:
+            tello.rotate_clockwise(30)
+
+        else:
+            print("Unknown command, or not allowed right now (take off first).")
 
         last_command_time = time.monotonic()
 
