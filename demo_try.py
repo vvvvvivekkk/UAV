@@ -11,13 +11,14 @@ def run(label, **kw):
 
 
 ZIDANE = "https://ultralytics.com/images/zidane.jpg"
+BUS = "https://ultralytics.com/images/bus.jpg"
 
 # Same image, two thresholds: shows what conf actually filters out.
 run("zidane conf=0.25", source=ZIDANE, conf=0.25)
 run("zidane conf=0.50", source=ZIDANE, conf=0.50)
 
 # Same bus photo as demo.py, but only COCO class 0 (person).
-run("bus classes=[0]", source="bus.jpg", conf=0.25, classes=[0])
+run("bus classes=[0]", source=BUS, conf=0.25, classes=[0])
 
 # 0.50 doesn't drop anything here (lowest score is tie=0.584).
 # 0.60 does — proof that conf is just a cutoff on the score.
