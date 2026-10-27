@@ -1,4 +1,24 @@
-# UAV — Tello Keyboard Control
+# UAV — Tello Keyboard Control + YOLO26
+
+## Quick setup (installs everything: djitellopy + YOLO)
+
+- **Windows:** double-click `setup_windows.bat`, then double-click `run_demo.bat`.
+- **macOS / Linux:** `bash setup_mac_linux.sh`, then `.venv/bin/python demo.py`.
+
+Everything installs into a `.venv` folder inside this project, so nothing else
+on the computer changes. Delete `.venv` to remove it all.
+The first run of `demo.py` downloads `yolo26n.pt` and saves an image with boxes
+to `runs/detect/predict/`.
+
+| File | What it does |
+|------|--------------|
+| `main.py` | Fly the Tello with the keyboard |
+| `demo.py` | First YOLO26 detection on a sample photo |
+| `train.py` | Train YOLO26 on your own photos in `my-dataset/` |
+| `predict_mine.py` | Run your trained model |
+| `my-dataset/` | Put photos in `images/train` + `images/val`, labels in `labels/train` + `labels/val` |
+
+---
 
 Connect to a DJI Tello drone and fly it with single-key keyboard commands.
 Each command moves **30 cm** or turns **30 degrees**, and the program waits
