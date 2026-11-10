@@ -24,7 +24,7 @@ RUN = Path("runs/detect/train")
 OUT = Path("report_assets")
 OUT.mkdir(exist_ok=True)
 DATA = "chair-table/data.yaml"
-VAL_IMAGES = ["138", "125", "131", "144", "149", "121"]
+VAL_IMAGES = ["138", "144", "130", "140", "149", "121"]
 
 # ---------- 1. read results.csv ----------
 df = pd.read_csv(RUN / "results.csv")
@@ -79,7 +79,7 @@ if pred_dir.exists():
 det_rows = []
 for stem in VAL_IMAGES:
     r = model.predict(source=f"chair-table/images/val/{stem}.jpg", conf=0.25,
-                      save=True, project="runs/detect", name="report_predict",
+                      save=True, project=str(Path("runs/detect").resolve()), name="report_predict",
                       exist_ok=True, verbose=False)[0]
     found = [f"{names[int(b.cls)]} {float(b.conf):.2f}" for b in r.boxes]
     gt = Path(f"chair-table/labels/val/{stem}.txt").read_text().split("\n")
@@ -90,18 +90,21 @@ for stem in VAL_IMAGES:
 # ---------- 4. terminal output panels (from the real training log) ----------
 log = Path("train_log.txt").read_text(errors="ignore").replace("\r", "\n")
 log = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", log)
-lines = [l.rstrip() for l in log.split("\n")]
+lines = [l.rstrip().replace("🚀", "").replace("✅", "") for l in log.split("\n")]
 lines = [l for l in lines if l.strip() and not re.search(r"(it/s|s/it)\]?\s*$|\d+/\d+\s+[\d.]+s/it", l) and "%" not in l[-40:] or "100%" in l]
 
 def term_panel(text_lines, fname, title):
-    text_lines = [l[:118] for l in text_lines]
-    h = 0.24 * len(text_lines) + 0.9
-    fig = plt.figure(figsize=(12, h))
+    # drop progress bars / timers, keep the numbers
+    text_lines = [re.sub(r"\s*\d+%\s*[━─]+.*$", "", l) for l in text_lines]
+    text_lines = [re.sub(r"/home/claude/uav/", "", l)[:96] for l in text_lines]
+    width = max(len(l) for l in text_lines + [title]) * 0.083 + 0.5
+    h = 0.175 * len(text_lines) + 0.6
+    fig = plt.figure(figsize=(width, h))
     fig.patch.set_facecolor("#0f172a")
-    fig.text(0.012, 1 - 0.32 / h, title, color="#7dd3fc", family="monospace",
+    fig.text(0.2 / width, 1 - 0.28 / h, title, color="#7dd3fc", family="monospace",
              fontsize=9.5, fontweight="bold", va="top")
-    fig.text(0.012, 1 - 0.7 / h, "\n".join(text_lines), color="#e2e8f0",
-             family="monospace", fontsize=8.2, va="top", linespacing=1.35)
+    fig.text(0.2 / width, 1 - 0.6 / h, "\n".join(text_lines), color="#e2e8f0",
+             family="monospace", fontsize=9.5, va="top", linespacing=1.25)
     fig.savefig(OUT / fname, dpi=160, facecolor=fig.get_facecolor())
     plt.close(fig)
 
@@ -123,7 +126,7 @@ term_panel(["$ python train.py"] + start + [""] + hdr + ep1 + first_all + ["  ..
            ([lines[allrows[-2]]] if len(allrows) > 1 else []) + [""] + tail,
            "terminal_train.png", "TERMINAL OUTPUT - python train.py (start, epoch 1, epoch 50, final validation)")
 
-val_lines = ["$ yolo val model=runs/detect/train/weights/best.pt data=chair-table/data.yaml",
+val_lines = ["$ python make_report.py   # best.pt .val(data='chair-table/data.yaml')",
              f"Ultralytics {ultralytics.__version__}  Python-{platform.python_version()} torch-{torch.__version__}",
              f"{'Class':>18}{'Images':>11}{'Instances':>11}{'Box(P':>11}{'R':>11}{'mAP50':>11}{'mAP50-95)':>11}",
              f"{'all':>18}{30:>11}{int(m.nt_per_class.sum()):>11}{overall[0]:>11.3f}{overall[1]:>11.3f}{overall[2]:>11.3f}{overall[3]:>11.3f}"]
@@ -132,7 +135,7 @@ for (n, p, r, a50, a), cnt in zip(per_class, [m.nt_per_class[int(k)] for k in m.
 val_lines.append(f"Speed: {m.speed['preprocess']:.1f}ms preprocess, {m.speed['inference']:.1f}ms inference, {m.speed['postprocess']:.1f}ms postprocess per image")
 term_panel(val_lines, "terminal_val.png", "TERMINAL OUTPUT - validation of best.pt on the 30 val photos")
 
-pred_lines = ["$ python predict_mine.py"]
+pred_lines = ["$ python make_report.py   # runs best.pt .predict(conf=0.25) on 6 val photos"]
 for stem, path, found, n_gt in det_rows:
     c = sum(f.startswith("chair") for f in found); t = sum(f.startswith("table") for f in found)
     pred_lines.append(f"image chair-table/images/val/{stem}.jpg: {c} chairs, {t} tables")
@@ -179,7 +182,7 @@ for p in Path("chair-table/labels").glob("*/*.txt"):
 
 story = []
 story += [Spacer(1, 3 * cm), Paragraph("YOLO26 Model Training and Results", ParagraphStyle("T", parent=H1, fontSize=24, leading=30)),
-          Paragraph("Chair and table detector trained on my own run of the chair-table dataset (2 classes)", ParagraphStyle("st", parent=B, fontSize=12, textColor=colors.HexColor("#0e7490"))),
+          Paragraph("Chair and table detector (2 classes) trained on the chair-table dataset", ParagraphStyle("st", parent=B, fontSize=12, textColor=colors.HexColor("#0e7490"))),
           Spacer(1, 1.2 * cm),
           table([["Student", "Aleti Vivek Reddy"], ["Student ID", "415410902"],
                  ["Course", "UAV (CCU) - YOLO26 hands-on, class of November 3"],
@@ -187,8 +190,8 @@ story += [Spacer(1, 3 * cm), Paragraph("YOLO26 Model Training and Results", Para
                  ["Code", "github.com/vvvvvivekkk/UAV (train.py, predict_mine.py, make_report.py)"]],
                 [3.5 * cm, W - 3.5 * cm], header=False),
           Spacer(1, 0.8 * cm),
-          Paragraph("<b>Contents</b><br/>1. Setup and dataset &nbsp; 2. Training loss curves &nbsp; 3. Validation loss curves &nbsp; "
-                    "4. Precision, Recall and mAP &nbsp; 5. Detection results using my trained model &nbsp; 6. Conclusion", B),
+          Paragraph("<b>Contents</b><br/>0. Setup and dataset<br/>1. Training loss curves<br/>2. Validation loss curves<br/>"
+                    "3. Precision, Recall and mAP<br/>4. Detection results using my trained model<br/>5. Conclusion", B),
           PageBreak()]
 
 story += [Paragraph("0. Setup and dataset", H1),
@@ -244,6 +247,7 @@ story += [Paragraph("3. Precision, Recall and mAP", H1),
                  ["all", str(n_val_inst), f3(overall[0]), f3(overall[1]), f3(overall[2]), f3(overall[3])]] +
                 [[n, str(int(m.nt_per_class[i])), f3(p), f3(r), f3(a50), f3(a)] for i, (n, p, r, a50, a) in enumerate(per_class)],
                 [3.0 * cm, 2.0 * cm] + [(W - 5.0 * cm) / 4] * 4),
+          Paragraph("The per-class table comes from re-validating best.pt with model.val(). It differs by about 0.002 from the end-of-training validation shown on page 2 (mAP50 0.817), because the two runs use slightly different validation batching.", SMALL),
           Spacer(1, 0.25 * cm), img(OUT / "terminal_val.png"),
           PageBreak()]
 
