@@ -14,3 +14,11 @@ videos/
 my-dataset/images/*/*.jpg
 my-dataset/labels/*/*.txt
 *.cache
+
+# chair-table dataset (course data, 2 classes) is tracked
+!chair-table/
+!chair-table/**
+!chair-table/data.yaml
+!chair-table/classes.txt
+# report helpers
+report_assets/
