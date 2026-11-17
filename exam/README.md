@@ -28,5 +28,6 @@ t take off · l land · w/s forward/back · a/d left/right · r/f up/down · q/e
 ## exam.py extra keys
 **p = save photo now** (backup if auto-save didn't happen). Auto-save: same name 5 frames in a row (conf >= 0.50), then the clearest frame within 1 s is saved to `exam\exam_photos\` and checked.
 
-Change teammate names in **03_collect_photos.py and 04_make_dataset.py** (same order in both).
+Team: **vivek** (key 1) and **praney** (key 2). Names are set in 03_collect_photos.py and 04_make_dataset.py (same order in both).
+Tip: praney wears glasses, vivek doesn't - keep it that way for photos AND exam day (and same clothes).
 See **FLOW.md** for how the program works (for the oral check).

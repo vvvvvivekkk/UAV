@@ -29,7 +29,7 @@ import cv2
 from ultralytics import YOLO
 
 # ---------------- SETTINGS ----------------
-MEMBERS = ["memberA", "memberB", "memberC"]   # SAME order as in 03_collect_photos.py
+MEMBERS = ["vivek", "praney"]                 # SAME order as in 03_collect_photos.py
 VAL_SHARE = 0.2                               # 20% of photos go to validation
 MIN_PERSON_CONF = 0.4                         # how sure yolo26n must be it's a person
 HERE = Path(__file__).parent

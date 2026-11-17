@@ -3,7 +3,7 @@ STEP 3 - Collect training photos of each teammate with the Tello camera.
 The drone does NOT need to fly: put it on a table or hold it at chest height.
 
 Click on the video window first, then:
-  1 / 2 / 3 = choose which teammate is in front of the camera
+  1 / 2     = choose who is in front of the camera (1 = vivek, 2 = praney)
   0         = background (empty room, nobody in view)
   c         = save ONE photo
   v (hold)  = save a photo every 0.3 seconds (burst)
@@ -25,14 +25,14 @@ import cv2
 from djitellopy import Tello
 
 # ---------------- SETTINGS ----------------
-MEMBERS = ["memberA", "memberB", "memberC"]   # rename to your teammates
+MEMBERS = ["vivek", "praney"]                 # our team (key 1 = vivek, key 2 = praney)
 BURST_GAP = 0.3                               # seconds between burst photos
 SAVE_DIR = Path(__file__).parent / "dataset_raw"
 # ------------------------------------------
 
 # Key -> folder name
-CHOICES = {ord("1"): MEMBERS[0], ord("2"): MEMBERS[1], ord("3"): MEMBERS[2],
-           ord("0"): "background"}
+CHOICES = {ord(str(i + 1)): name for i, name in enumerate(MEMBERS)}
+CHOICES[ord("0")] = "background"
 
 def count_photos(name):
     folder = SAVE_DIR / name
@@ -72,7 +72,7 @@ try:
             cv2.putText(view, f"{name}: {count_photos(name)} photos", (10, y),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             y += 30
-        cv2.putText(view, "1/2/3/0 choose | c photo | hold v burst | ESC quit",
+        cv2.putText(view, "1 vivek | 2 praney | 0 empty room | c photo | hold v burst | ESC quit",
                     (10, view.shape[0] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
                     (255, 255, 255), 2)
         cv2.imshow("Collect photos", view)
