@@ -12,7 +12,7 @@ Click on the video window first, then use these keys (no Enter needed):
 When you let go of the keys, the drone HOVERS in place.
 
 Run (from the UAV folder):
-  .venv\Scripts\python.exe exam\02_fly_test.py
+  .venv2\Scripts\python.exe exam\02_fly_test.py
 """
 import time
 
@@ -60,6 +60,7 @@ try:
             cv2.putText(frame, status_text, (10, 65),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
             cv2.imshow("Tello fly test", frame)
+            cv2.setWindowProperty("Tello fly test", cv2.WND_PROP_TOPMOST, 1)  # keep window in front so it gets the keys
 
         key = cv2.waitKey(1) & 0xFF
 

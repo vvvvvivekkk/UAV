@@ -27,3 +27,4 @@ report_assets/
 # exam: raw training photos and saved exam photos stay local
 exam/dataset_raw/
 exam/exam_photos/
+.venv2/

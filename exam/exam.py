@@ -21,7 +21,7 @@ Keys (click the video window first):
   x EMERGENCY motors off (only if about to hit a person) | ESC land + quit
 
 Run (from the UAV folder):
-  .venv\Scripts\python.exe exam\exam.py
+  .venv2\Scripts\python.exe exam\exam.py
 """
 import time
 from pathlib import Path
@@ -145,6 +145,7 @@ try:
             cv2.putText(view, saved_text, (10, view.shape[0] - 20),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0) if "OK" in saved_text else (0, 0, 255), 2)
         cv2.imshow("EXAM - Tello", view)
+        cv2.setWindowProperty("EXAM - Tello", cv2.WND_PROP_TOPMOST, 1)  # keep window in front so it gets the keys
 
         # 4) Keyboard flying.
         key = cv2.waitKey(1) & 0xFF

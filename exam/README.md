@@ -1,7 +1,7 @@
 # Exam code (UAV practical exam)
 
 Run everything from the **UAV folder** with the existing venv:
-`.venv\Scripts\python.exe exam\<file>.py`
+`.venv2\Scripts\python.exe exam\<file>.py`
 
 Before running: connect the laptop Wi-Fi to **TELLO-XXXXXX** (no internet on that Wi-Fi).
 Always click on the video window before pressing keys.

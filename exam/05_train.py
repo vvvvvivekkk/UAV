@@ -8,7 +8,7 @@ On a laptop CPU this takes a while (roughly 20-60 min). On Google Colab's
 free GPU it takes a few minutes: upload exam\team_dataset, run the same code.
 
 Run (from the UAV folder):
-  .venv\Scripts\python.exe exam\05_train.py
+  .venv2\Scripts\python.exe exam\05_train.py
 """
 from pathlib import Path
 

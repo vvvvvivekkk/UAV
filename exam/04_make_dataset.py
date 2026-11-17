@@ -19,7 +19,7 @@ Check the boxes afterwards: open exam\team_dataset in X-AnyLabeling and fix
 any wrong box. YOU are responsible for the labels being correct.
 
 Run (from the UAV folder):
-  .venv\Scripts\python.exe exam\04_make_dataset.py
+  .venv2\Scripts\python.exe exam\04_make_dataset.py
 """
 import random
 import shutil

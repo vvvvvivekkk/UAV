@@ -5,7 +5,7 @@ Includes: all code in exam\, README/FLOW, the model (best.pt), data.yaml,
 classes.txt, and every photo in exam\exam_photos\.
 
 Run (from the UAV folder):
-  .venv\Scripts\python.exe exam\make_submission.py
+  .venv2\Scripts\python.exe exam\make_submission.py
 """
 import time
 import zipfile

@@ -7,7 +7,7 @@ What it does:
   3. Shows the live camera for 20 seconds (press q to quit early).
 
 Run (from the UAV folder):
-  .venv\Scripts\python.exe exam\01_connect_test.py
+  .venv2\Scripts\python.exe exam\01_connect_test.py
 """
 import time
 
@@ -49,6 +49,7 @@ try:
         cv2.putText(frame, f"Battery: {tello.get_battery()}%  (q = quit)",
                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         cv2.imshow("Tello connect test", frame)
+        cv2.setWindowProperty("Tello connect test", cv2.WND_PROP_TOPMOST, 1)  # keep window in front so it gets the keys
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
