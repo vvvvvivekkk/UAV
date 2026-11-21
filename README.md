@@ -22,7 +22,8 @@ Built for the CCU UAV course practical exam. Also contains the course's YOLO26 t
 |---|---|
 | **1. Install** (once per laptop, normal internet) | Double-click **`setup.bat`**. It creates one venv (`.venv2`) with everything and ends with **ALL GOOD**. |
 | **2. Connect** | Turn the Tello on → join the Wi-Fi **`TELLO-XXXXXX`** (no internet on it, that's normal). |
-| **3. Fly + recognise** | `.venv2\Scripts\python.exe exam\flight_console.py` → click the video once → fly. |
+| **3. Self-test** | `.venv2\Scripts\python.exe exam\drone_check.py` → connection, commands, video, recognition → **READY TO FLY** (add `--fly` for a short test flight). |
+| **4. Fly + recognise** | `.venv2\Scripts\python.exe exam\flight_console.py` → click the video once → fly. |
 
 Full step-by-step guide (photos, training, exam day, hand-in): **[exam/FLOW.md](exam/FLOW.md)**
 
@@ -121,6 +122,7 @@ UAV/
 │   ├── exam.py                backup: simple OpenCV window, same recognition
 │   ├── control_panel.py       fly + take training photos with the Tello
 │   ├── check_setup.py         "is this laptop ready?" (no drone needed)
+│   ├── drone_check.py         drone self-test: Wi-Fi, connect, commands, video, recognition (+ --fly)
 │   ├── convert_photos.py / build_identity_dataset.py / train_identity.py / test_identity.py
 │   ├── make_submission.py     zip code + models + exam photos to hand in
 │   ├── models/                identity.pt, face_detector.onnx, face_recognizer.onnx, face_gallery.npz

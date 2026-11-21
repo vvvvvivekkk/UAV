@@ -46,6 +46,15 @@ py -m venv --upgrade .venv2
 ```
 You should see `Connected!`, battery %, and a live video window for 20 s.
 
+**Full self-test (recommended before every practice / the exam):**
+```
+.venv2\Scripts\python.exe exam\drone_check.py          # drone does NOT fly
+.venv2\Scripts\python.exe exam\drone_check.py --fly    # + take off, hover, up, turn, land
+```
+Checks the Wi-Fi name, connection, battery, temperature, 5 read commands, a control command, video start /
+speed / brightness, and live recognition (stand 1–2 m in front and look at the drone). Prints PASS / WARN /
+FAIL per step and **RESULT: READY TO FLY**. Report + snapshots: `exam\check_results\`.
+
 | Problem | Fix |
 |---|---|
 | `Did not receive a state packet` | Just run it again (normal on the first try) |
@@ -194,7 +203,7 @@ Backup (simple OpenCV window, same recognition): `.venv2\Scripts\python.exe exam
 
 - [ ] Batteries charged; drone cool
 - [ ] Same clothes; Praney wears glasses
-- [ ] `exam\check_setup.py` prints **ALL GOOD**; `01_connect_test.py` shows video
+- [ ] `exam\check_setup.py` prints **ALL GOOD**; `exam\drone_check.py` prints **READY TO FLY**
 - [ ] In `exam\models\`: `identity.pt`, `face_detector.onnx`, `face_recognizer.onnx`, `face_gallery.npz`; and `yolo26n.pt` in the UAV folder
 - [ ] Laptop on TELLO Wi-Fi
 - [ ] Everyone knows: **space = hover, l = land, x = emergency**; stop at once if the observer/teacher says stop
