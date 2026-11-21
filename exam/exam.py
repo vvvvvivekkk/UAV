@@ -2,9 +2,10 @@ r"""
 EXAM PROGRAM - fly the Tello by camera, recognise the teammate, save the photo.
 
 Flow (see FLOW.md):
-  1. Load our two models (before connecting, so no time is lost later):
-     yolo26n.pt finds every person, models\identity.pt names them
-     (vivek / praney / other person) - see identify.py.
+  1. Load the models (before connecting, so no time is lost later):
+     face detector finds every face, models\identity.pt (our YOLO26 classifier)
+     names it (vivek / praney / other person), face fingerprints double-check it,
+     yolo26n.pt finds people whose face can't be seen - see identify.py.
   2. Connect to the Tello, start the live video.
   3. Every frame: find + name every person, draw "vivek 0.93" or "other person".
   4. Pilot flies with the keyboard while watching this window.
@@ -32,7 +33,7 @@ import cv2
 import numpy as np
 from djitellopy import Tello
 
-import identify as ident   # our 2-step recogniser (same folder)
+import identify as ident   # our face recogniser (same folder)
 
 # ---------------- SETTINGS ----------------
 HERE = Path(__file__).parent
@@ -72,6 +73,7 @@ def save_photo(clean_frame, results, det):
 
 # 1) Models are loaded by "import identify"; warm them up (first run is slow).
 ident.identify(np.zeros((720, 960, 3), dtype=np.uint8))
+ident.identity_model.predict(np.zeros((160, 120, 3), dtype=np.uint8), verbose=False)
 print("Models ready. Names:", ident.identity_model.names)
 
 tello = Tello()

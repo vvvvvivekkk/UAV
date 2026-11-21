@@ -2,8 +2,8 @@ r"""
 TEST - check the identity model on photos it never trained on.
 
 For every photo in exam\dataset_jpg\test\vivek and \praney it runs the full
-pipeline (find people -> name them) and checks that the MAIN person (biggest box)
-gets the right name. Background test photos must give only "other person".
+pipeline (find faces -> name them) and checks that the right member is found
+and the other member is NOT wrongly named in that photo.
 
 Run (from the UAV folder):
   .venv2\Scripts\python.exe exam\test_identity.py
@@ -24,16 +24,14 @@ for member in ident.MEMBERS:
     wrong = []
     for f in files:
         img = cv2.imread(str(f))
-        res = ident.identify(img)
-        if not res:
-            wrong.append((f.name, "nobody found"))
-            continue
-        main = max(res, key=lambda r: (r[2][2] - r[2][0]) * (r[2][3] - r[2][1]))
-        if main[0] == member:
+        res = ident.identify(ident.shrink(img))
+        labels = [r[0] for r in res]
+        others = [m for m in ident.MEMBERS if m != member]
+        if member in labels and not any(m in labels for m in others):
             ok += 1
-            confs.append(main[1])
+            confs.append(next(r[1] for r in res if r[0] == member))
         else:
-            wrong.append((f.name, main[0]))
+            wrong.append((f.name, ", ".join(labels) or "nobody found"))
     total += len(files)
     correct += ok
     avg = sum(confs) / len(confs) if confs else 0

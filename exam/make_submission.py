@@ -1,8 +1,9 @@
 r"""
 AFTER THE EXAM - put everything to hand in into one zip file.
 
-Includes: all code in exam\, README/FLOW, both models (yolo26n.pt finds people,
-models\identity.pt names them), and every photo in exam\exam_photos\.
+Includes: all code in exam\, README/FLOW, all models (models\identity.pt names faces,
+face detector / recognizer / gallery in models\, yolo26n.pt finds people),
+and every photo in exam\exam_photos\.
 
 Run (from the UAV folder):
   .venv2\Scripts\python.exe exam\make_submission.py
@@ -16,6 +17,9 @@ zip_path = HERE.parent / f"submission_{time.strftime('%Y%m%d_%H%M')}.zip"
 
 files = list(HERE.glob("*.py")) + list(HERE.glob("*.md"))
 files += [HERE / "models" / "identity.pt",
+          HERE / "models" / "face_detector.onnx",
+          HERE / "models" / "face_recognizer.onnx",
+          HERE / "models" / "face_gallery.npz",
           HERE.parent / "yolo26n.pt"]
 files += sorted((HERE / "exam_photos").glob("*.jpg"))
 

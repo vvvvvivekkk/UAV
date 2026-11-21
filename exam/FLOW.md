@@ -5,6 +5,18 @@ Always open a terminal **in the UAV folder** (`C:\Users\11020\Desktop\UAV`) and 
 
 ---
 
+## Exam rules in short (from the teacher's slides, "preliminary rules")
+
+- **Roles each flight:** pilot (back to the drone, watches ONLY the laptop live video), target (stands in the taped box), safety observer (watches the drone, can shout STOP, may not help fly). Rules say teams of 3 and everyone pilots once; **we are 2, so ask the teacher how we rotate**.
+- **Route:** take off from the start square → U-shaped route (ㄇ) around the tables → target on the other side.
+- **Timer:** starts at the teacher's "go", stops when the photo with **name + box + confidence** is **saved and opens**.
+- **Score = 50% time + 50% recognition.** Recognition = **confidence% + 20** if the name is right (0.80 → 100, 1.00 → 120). Time: fastest team 100, slowest 80, others in between by rank. Best valid flight of 3 counts. Max 110.
+- Confidence must be the model's **raw** output (never scaled/boosted/fixed) – our code does this.
+- **0 points for that flight:** hit a person, crash, leave the area / skip the route, wrong name / no photo, not stopping when told.
+- Image must come from the **Tello live stream**. Hand in code + models + photos right after; the teacher may ask you to explain the code (oral check).
+
+---
+
 ## 0. One-time setup (needs normal internet, NOT the Tello Wi-Fi)
 
 ```
@@ -81,10 +93,14 @@ Keep Tello photos as the majority (the exam uses the Tello camera).
 
 ## 3. Recognition model: vivek / praney / other person (no drone needed)
 
-We use **2 steps**: `yolo26n.pt` finds every person (box), then our trained
-**identity model** (`exam\models\identity.pt`) names each one: **vivek**, **praney** or
-**other person**, with the model's raw confidence. Anyone who isn't clearly vivek or
-praney (classmates, strangers) is shown as **other person**.
+We recognise the **face** (not clothes – with clothes the model called a classmate in a
+light-blue hoodie "praney"). For every frame:
+1. **Face detector** (`models\face_detector.onnx`, OpenCV YuNet) finds every face.
+2. Our trained **identity model** (`models\identity.pt`, YOLO26 classifier) looks at each face
+   (+ hair, glasses) → **vivek / praney / other** with its **raw confidence** (the number shown).
+3. **Double check** (`models\face_recognizer.onnx` + `models\face_gallery.npz`, OpenCV SFace):
+   the face must also look like that member's saved photos, otherwise → **other person**.
+4. `yolo26n.pt` finds people whose face can't be seen → grey **other person** box.
 
 Photo folders (your own photos):
 ```
@@ -100,25 +116,28 @@ exam\dataset_raw\background\                                     <- classroom WI
 ```
 → `exam\dataset_jpg\...` (train / test / background)
 
-**B. Build the identity dataset (crops of every person)**
+**B. Build the identity dataset (face crops + face fingerprints)**
 ```
 .venv2\Scripts\python.exe exam\build_identity_dataset.py
 ```
-→ `exam\identity_dataset\{train,val,test}\{vivek,praney,other}`.
-**Check the crops:** open `identity_dataset\train\vivek` and `\praney`. If a classmate is in there
-(happens when they stood closer to the camera than you), move that file into `other\`.
+→ `exam\identity_dataset\{train,val,test}\{vivek,praney,other}` and `exam\models\face_gallery.npz`.
+**Check the crops:** open `identity_dataset\train\vivek` and `\praney`. If someone else's face is in
+there, move that file into `other\`.
 
-**C. Train** (GPU: few minutes, CPU: 15–30 min)
+**C. Train** (GPU: few minutes, CPU: 15–20 min)
 ```
 .venv2\Scripts\python.exe exam\train_identity.py
 ```
-→ `exam\models\identity.pt` and prints the TEST accuracy.
+→ `exam\models\identity.pt` and prints the TEST accuracy (current: 99.4% on face crops).
 
 **D. Test on the Test photos**
 ```
 .venv2\Scripts\python.exe exam\test_identity.py
 ```
-Current model (21 Nov): **vivek 57/57, praney 30/30 = 100%**, no classmate wrongly named.
+Current model (21 Nov): **praney 30/30, vivek 49/57, and no wrong names**. The misses are photos where the
+face is dark, turned away or tiny → shown as "other person" (the safe answer: a wrong name = 0 points).
+On our own phone videos: vivek standing facing the camera = **vivek 1.00 in 361/367 frames**; classmates
+(also in light-blue hoodies) = "other person".
 
 **E. Label a video or photos** (box + `vivek 0.97` / `praney 0.95` / `other person`)
 ```
@@ -126,7 +145,10 @@ Current model (21 Nov): **vivek 57/57, praney 30/30 = 100%**, no classmate wrong
 .venv2\Scripts\python.exe exam\identify.py exam\dataset_jpg\test\praney
 ```
 → labelled video / photos in `exam\identify_results\`, plus a summary (frames per person, average confidence).
-Settings at the top of `identify.py`: `MIN_NAME_CONF` (0.60: below this a name guess becomes "other person"), `PERSON_CONF`.
+Phone 4K videos are shrunk to 1280 px automatically.
+Settings at the top of `identify.py`: `MIN_NAME_CONF` (0.60), `MIN_SIMILARITY` (0.50, the double check), `MIN_FACE`.
+
+**On exam day the face must be visible:** target looks at the drone; hover at face height, 1–2 m away.
 
 **Adding more photos later:** put them in `dataset_raw`, then run A → B → C → D again.
 
@@ -141,7 +163,7 @@ Settings at the top of `identify.py`: `MIN_NAME_CONF` (0.60: below this a name g
 ```
 Click the video window. Same flying keys (t, l, w/s/a/d, r/f, q/e, space, x = emergency, ESC = land + quit).
 - The screen shows every person: `vivek 0.912` / `praney 0.95` (raw confidence) or `other person`.
-- **Auto-save:** when the same name is seen 5 frames in a row (≥ 0.50), it waits 1 s, saves the clearest frame to `exam\exam_photos\` and shows **SAVED OK**.
+- **Auto-save:** when the same name is seen 5 frames in a row (passes the 0.60 + face checks), it waits 1 s, saves the clearest frame to `exam\exam_photos\` and shows **SAVED OK**.
 - **p** = save a photo now (backup).
 - Fly the ㄇ route, hover facing the person ~1–2 m away, steady, until SAVED OK. Then land (**l**).
 
@@ -154,7 +176,7 @@ Settings at the top of `exam.py`: `SPEED`, `STABLE_FRAMES`, `BEST_WINDOW`; name 
 - [ ] Batteries charged; drone cool
 - [ ] Same clothes; Praney wears glasses
 - [ ] `.venv2` works (`01_connect_test.py` runs)
-- [ ] `exam\models\identity.pt` and `yolo26n.pt` exist
+- [ ] In `exam\models\`: `identity.pt`, `face_detector.onnx`, `face_recognizer.onnx`, `face_gallery.npz`; and `yolo26n.pt` in the UAV folder
 - [ ] Laptop on TELLO Wi-Fi
 - [ ] Everyone knows: **space = hover, l = land, x = emergency**; stop at once if the observer/teacher says stop
 - [ ] 0 points if: hit a person, crash, leave the area, wrong name, photo not saved
@@ -170,14 +192,14 @@ Creates `submission_<date>.zip` in the UAV folder (code + models + exam photos).
 
 ## How the exam program works (for the oral check)
 
-1. **Load the models first.** `exam.py` loads `yolo26n.pt` (finds people) and our `identity.pt` (names them) and runs them once on a black image to warm up.
+1. **Load the models first.** `exam.py` (through `identify.py`) loads the face detector, our `identity.pt` (names faces), the face recognizer + gallery (double check) and `yolo26n.pt` (finds people), and runs them once to warm up.
 2. **Connect to the Tello.** Connects over the Tello Wi-Fi, prints the battery, turns on the live video stream.
-3. **Every video frame:** converts colours RGB → BGR, finds every person, crops head + upper body, and our classifier says vivek / praney / other.
-4. **Draw the result.** Box on every person: `vivek 0.912` with the **raw** confidence (never changed), or `other person` if not sure (below 0.60). Each member is shown at most once per frame.
+3. **Every video frame:** converts colours RGB → BGR, finds every face, crops face + hair, and our classifier says vivek / praney / other. The face must also be similar (≥ 0.50) to that member's saved photos.
+4. **Draw the result.** Box on every face: `vivek 0.912` with the **raw** classifier confidence (never changed), or `other person` if not sure (below 0.60 or fails the double check). People without a visible face get a grey `other person` box. Each member is shown at most once per frame.
 5. **Fly with the keyboard.** Keys send `send_rc_control`; with no key pressed it sends 0,0,0,0 so the drone hovers.
 6. **Avoid wrong names.** Only saves once the **same name** appears in 5 frames in a row (confidence ≥ 0.60).
 7. **Pick the clearest frame.** For 1 second it keeps the frame with the highest raw confidence, then saves it to `exam_photos/` with name, confidence and time in the filename.
 8. **Check the photo.** Re-opens the saved file to make sure it's valid, then shows `SAVED OK`.
 9. **Safety.** Whatever happens (even an error), the `finally` block lands the drone and closes the video.
 
-**How the model was made:** our phone + Tello photos → `convert_photos.py` (HEIC → JPG) → `build_identity_dataset.py` cropped every person with the pretrained `yolo26n.pt` (biggest person = the member named by the folder, classmates in background photos = other) → `train_identity.py` fine-tuned the YOLO26n **classifier** (`yolo26n-cls.pt`) on 3 classes → tested on the separate Test photos: 100% correct.
+**How the model was made:** our phone + Tello photos → `convert_photos.py` (HEIC → JPG) → `build_identity_dataset.py` found every face with OpenCV YuNet (biggest face = the member named by the folder, classmates' faces = other) and saved SFace fingerprints of the member faces → `train_identity.py` fine-tuned the YOLO26n **classifier** (`yolo26n-cls.pt`) on 3 classes of face crops → tested on the separate Test photos and our own videos.
