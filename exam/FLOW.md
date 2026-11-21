@@ -19,11 +19,15 @@ Always open a terminal **in the UAV folder** (`C:\Users\11020\Desktop\UAV`) and 
 
 ## 0. One-time setup (needs normal internet, NOT the Tello Wi-Fi)
 
+**Double-click `setup.bat`** in the UAV folder (or type `setup.bat` in a terminal there).
+It creates ONE venv, `.venv2`, installs everything from `requirements.txt`
+(YOLO26, Tello, OpenCV, Pillow, HEIC support), then runs the check and prints **ALL GOOD**.
+Takes a few minutes the first time (downloads PyTorch). Do this on every new laptop (e.g. Praney's).
+
+Check again any time (no drone needed):
 ```
-py -m venv .venv2
-.venv2\Scripts\python.exe -m pip install djitellopy==2.5.0 opencv-python ultralytics
+.venv2\Scripts\python.exe exam\check_setup.py
 ```
-Takes a few minutes (downloads PyTorch). Do this on every new laptop (e.g. Praney's).
 
 **If you see "Access is denied" or "This app can't run on your PC":** the `python.exe` inside `.venv2` got damaged. Fix (10 s, keeps everything):
 ```
@@ -156,18 +160,33 @@ Settings at the top of `identify.py`: `MIN_NAME_CONF` (0.60), `MIN_SIMILARITY` (
 
 ---
 
-## 4. Practice the exam
+## 4. Fly + recognise live: the FLIGHT CONSOLE (use this in the exam)
 
 ```
-.venv2\Scripts\python.exe exam\exam.py
+.venv2\Scripts\python.exe exam\flight_console.py
 ```
-Click the video window. Same flying keys (t, l, w/s/a/d, r/f, q/e, space, x = emergency, ESC = land + quit).
-- The screen shows every person: `vivek 0.912` / `praney 0.95` (raw confidence) or `other person`.
-- **Auto-save:** when the same name is seen 5 frames in a row (passes the 0.60 + face checks), it waits 1 s, saves the clearest frame to `exam\exam_photos\` and shows **SAVED OK**.
-- **p** = save a photo now (backup).
-- Fly the ㄇ route, hover facing the person ~1–2 m away, steady, until SAVED OK. Then land (**l**).
+One window: **live Tello video with boxes** (`vivek 0.97` / `praney 0.95` / `other person`),
+battery / height / temperature, fly buttons, a Tello command box and a log.
+**Click the video once** so the window gets your keys.
 
-Settings at the top of `exam.py`: `SPEED`, `STABLE_FRAMES`, `BEST_WINDOW`; name threshold `MIN_NAME_CONF` is in `identify.py`.
+| Key / button | What it does |
+|---|---|
+| **t** / **l** | take off / land |
+| hold **w s a d** | forward / back / left / right (let go = hover) |
+| hold **r f** / **q e** | up / down / turn left / turn right |
+| **space** | hover |
+| **x** (red button) | EMERGENCY motors off – only if about to hit a person |
+| **p** | save photo now (best member frame of the last 3 s) |
+| **n** | new flight (allow a new auto-save) |
+| command box | type `battery?`, `temp?`, `up 30`, `cw 90` + Enter |
+
+- **SEEN:** line shows the best member now and the exam score (`vivek 0.97 (score 117)`). Orange = below 0.80 → get closer / hold steady.
+- **Auto-save:** same member 3 times in a row with confidence **≥ 0.80** (score ≥ 100) → keeps the clearest frame for 1 s → saves to `exam\exam_photos\` → re-opens it → **SAVED OK** (green).
+- Can't reach 0.80? Press **p** – it still saves the raw confidence (never changed).
+- Exam flight: take off → fly the ㄇ route → hover facing the person at face height, 1–2 m away → wait for **SAVED OK** → land (**l**). Press **n** before the next flight.
+
+Settings at the top of `flight_console.py`: `SPEED`, `SAVE_MIN_CONF` (0.80), `STABLE_FRAMES`, `BEST_WINDOW`.
+Backup (simple OpenCV window, same recognition): `.venv2\Scripts\python.exe exam\exam.py`
 
 ---
 
@@ -175,7 +194,7 @@ Settings at the top of `exam.py`: `SPEED`, `STABLE_FRAMES`, `BEST_WINDOW`; name 
 
 - [ ] Batteries charged; drone cool
 - [ ] Same clothes; Praney wears glasses
-- [ ] `.venv2` works (`01_connect_test.py` runs)
+- [ ] `exam\check_setup.py` prints **ALL GOOD**; `01_connect_test.py` shows video
 - [ ] In `exam\models\`: `identity.pt`, `face_detector.onnx`, `face_recognizer.onnx`, `face_gallery.npz`; and `yolo26n.pt` in the UAV folder
 - [ ] Laptop on TELLO Wi-Fi
 - [ ] Everyone knows: **space = hover, l = land, x = emergency**; stop at once if the observer/teacher says stop
@@ -192,14 +211,14 @@ Creates `submission_<date>.zip` in the UAV folder (code + models + exam photos).
 
 ## How the exam program works (for the oral check)
 
-1. **Load the models first.** `exam.py` (through `identify.py`) loads the face detector, our `identity.pt` (names faces), the face recognizer + gallery (double check) and `yolo26n.pt` (finds people), and runs them once to warm up.
-2. **Connect to the Tello.** Connects over the Tello Wi-Fi, prints the battery, turns on the live video stream.
+1. **Load the models first.** `flight_console.py` (through `identify.py`) loads the face detector, our `identity.pt` (names faces), the face recognizer + gallery (double check) and `yolo26n.pt` (finds people), and runs them once to warm up.
+2. **Connect to the Tello.** Connects over the Tello Wi-Fi, shows the battery, turns on the live video stream. Recognition runs in a background thread so the window and flying never freeze.
 3. **Every video frame:** converts colours RGB → BGR, finds every face, crops face + hair, and our classifier says vivek / praney / other. The face must also be similar (≥ 0.50) to that member's saved photos.
 4. **Draw the result.** Box on every face: `vivek 0.912` with the **raw** classifier confidence (never changed), or `other person` if not sure (below 0.60 or fails the double check). People without a visible face get a grey `other person` box. Each member is shown at most once per frame.
-5. **Fly with the keyboard.** Keys send `send_rc_control`; with no key pressed it sends 0,0,0,0 so the drone hovers.
-6. **Avoid wrong names.** Only saves once the **same name** appears in 5 frames in a row (confidence ≥ 0.60).
+5. **Fly with the keyboard.** Every 50 ms it sends `send_rc_control` with the held key's movement; no key = 0,0,0,0 so the drone hovers.
+6. **Avoid wrong names, aim for a high score.** Only auto-saves once the **same name** appears 3 times in a row with confidence ≥ 0.80.
 7. **Pick the clearest frame.** For 1 second it keeps the frame with the highest raw confidence, then saves it to `exam_photos/` with name, confidence and time in the filename.
 8. **Check the photo.** Re-opens the saved file to make sure it's valid, then shows `SAVED OK`.
-9. **Safety.** Whatever happens (even an error), the `finally` block lands the drone and closes the video.
+9. **Safety.** Closing the window lands the drone and stops the video; x = emergency motors off.
 
 **How the model was made:** our phone + Tello photos → `convert_photos.py` (HEIC → JPG) → `build_identity_dataset.py` found every face with OpenCV YuNet (biggest face = the member named by the folder, classmates' faces = other) and saved SFace fingerprints of the member faces → `train_identity.py` fine-tuned the YOLO26n **classifier** (`yolo26n-cls.pt`) on 3 classes of face crops → tested on the separate Test photos and our own videos.

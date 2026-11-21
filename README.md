@@ -2,7 +2,8 @@
 
 ## Quick setup (installs everything: djitellopy + YOLO)
 
-- **Windows:** double-click `setup_windows.bat`, then double-click `run_demo.bat`.
+- **Windows:** double-click `setup.bat` (creates `.venv2` with everything, checks it).
+  Drone exam: see `exam/FLOW.md` – fly + recognise live with `.venv2\Scripts\python.exe exam\flight_console.py`.
 - **macOS / Linux:** `bash setup_mac_linux.sh`, then `.venv/bin/python demo.py`.
 
 Everything installs into a `.venv` folder inside this project, so nothing else

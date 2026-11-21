@@ -1,3 +1,9 @@
-djitellopy==2.5.0
+# Everything the laptop needs (YOLO course + Tello drone exam), all in ONE venv: .venv2
+# Install:  double-click setup.bat   (or: .venv2\Scripts\python.exe -m pip install -r requirements.txt)
+ultralytics          # YOLO26 (also installs torch, numpy)
+djitellopy==2.5.0    # talk to the Tello drone
+opencv-python>=4.8   # video, face detector + face recognizer
+pillow               # show video in the flight console window
+pillow-heif          # convert iPhone .HEIC photos to .jpg
+numpy
 python-dotenv
-ultralytics
