@@ -28,3 +28,9 @@ report_assets/
 exam/dataset_raw/
 exam/exam_photos/
 .venv2/
+
+# identity pipeline: local data/results stay out of git
+exam/dataset_jpg/
+exam/identity_dataset/
+exam/identify_results/
+exam/videos/

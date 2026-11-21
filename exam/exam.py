@@ -2,12 +2,14 @@ r"""
 EXAM PROGRAM - fly the Tello by camera, recognise the teammate, save the photo.
 
 Flow (see FLOW.md):
-  1. Load our trained model (before connecting, so no time is lost later).
+  1. Load our two models (before connecting, so no time is lost later):
+     yolo26n.pt finds every person, models\identity.pt names them
+     (vivek / praney / other person) - see identify.py.
   2. Connect to the Tello, start the live video.
-  3. Every frame: run YOLO, draw boxes with "name confidence".
+  3. Every frame: find + name every person, draw "vivek 0.93" or "other person".
   4. Pilot flies with the keyboard while watching this window.
   5. When the SAME teammate is seen in STABLE_FRAMES frames in a row
-     (confidence >= MIN_CONF), keep watching for BEST_WINDOW seconds and
+     (confidence >= MIN_NAME_CONF in identify.py), keep watching for BEST_WINDOW seconds and
      save the frame with the HIGHEST RAW confidence.
   6. Check the saved photo opens correctly, show "SAVED OK" on screen.
   7. Pilot lands (l). ESC = land and quit.
@@ -29,16 +31,15 @@ from pathlib import Path
 import cv2
 import numpy as np
 from djitellopy import Tello
-from ultralytics import YOLO
+
+import identify as ident   # our 2-step recogniser (same folder)
 
 # ---------------- SETTINGS ----------------
 HERE = Path(__file__).parent
-MODEL_PATH = HERE / "runs" / "team" / "weights" / "best.pt"
 PHOTO_DIR = HERE / "exam_photos"
 SPEED = 30            # flying speed (10-100)
 MIN_BATTERY = 20      # no takeoff below this %
 HOLD_TIME = 0.15      # seconds one key press keeps moving
-MIN_CONF = 0.50       # ignore detections below this confidence
 STABLE_FRAMES = 5     # same name this many frames in a row before saving
 BEST_WINDOW = 1.0     # seconds to look for the clearest frame, then save
 # ------------------------------------------
@@ -51,31 +52,16 @@ MOVES = {
 }
 
 
-def best_detection(result):
-    """Return (name, raw_confidence, box) of the most confident detection, or None."""
-    if result.boxes is None or len(result.boxes) == 0:
-        return None
-    i = int(result.boxes.conf.argmax())
-    conf = float(result.boxes.conf[i])          # RAW confidence from YOLO
-    name = result.names[int(result.boxes.cls[i])]
-    box = [int(v) for v in result.boxes.xyxy[i].tolist()]
-    return name, conf, box
+def best_member(results):
+    """From all people in the frame, return the team member with the highest
+    RAW confidence as (name, conf, box), or None if no member is recognised."""
+    members = [r for r in results if r[1] is not None]   # "other person" has no conf
+    return max(members, key=lambda r: r[1]) if members else None
 
 
-def draw_detection(img, det, color=(0, 200, 0)):
-    """Draw the box and 'name 0.912' label (3 decimals of the raw value)."""
-    name, conf, (x1, y1, x2, y2) = det
-    cv2.rectangle(img, (x1, y1), (x2, y2), color, 3)
-    label = f"{name} {conf:.3f}"
-    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)
-    cv2.rectangle(img, (x1, y1 - th - 12), (x1 + tw + 8, y1), color, -1)
-    cv2.putText(img, label, (x1 + 4, y1 - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
-
-
-def save_photo(clean_frame, det):
-    """Draw the result on a copy, save it, and check the file opens."""
-    img = clean_frame.copy()
-    draw_detection(img, det)
+def save_photo(clean_frame, results, det):
+    """Draw every person's label on a copy, save it, and check the file opens."""
+    img = ident.draw(clean_frame.copy(), results)
     PHOTO_DIR.mkdir(exist_ok=True)
     name, conf, _ = det
     path = PHOTO_DIR / f"{name}_{conf:.3f}_{time.strftime('%Y%m%d_%H%M%S')}.jpg"
@@ -84,11 +70,9 @@ def save_photo(clean_frame, det):
     return path, ok
 
 
-# 1) Load the model first and warm it up (first prediction is always slow).
-print("Loading model:", MODEL_PATH)
-model = YOLO(str(MODEL_PATH))
-model.predict(np.zeros((720, 960, 3), dtype=np.uint8), verbose=False)
-print("Model ready. Classes:", model.names)
+# 1) Models are loaded by "import identify"; warm them up (first run is slow).
+ident.identify(np.zeros((720, 960, 3), dtype=np.uint8))
+print("Models ready. Names:", ident.identity_model.names)
 
 tello = Tello()
 flying = False
@@ -113,9 +97,9 @@ try:
             continue
         clean = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)   # RGB -> BGR
 
-        # 3) Recognise: run our model on this frame.
-        result = model.predict(clean, conf=MIN_CONF, verbose=False)[0]
-        det = best_detection(result)
+        # 3) Recognise: find every person and name them.
+        results = ident.identify(clean)
+        det = best_member(results)          # best vivek/praney in this frame
 
         # 5) Stable-name check, then pick the clearest frame.
         if det and det[0] == streak_name:
@@ -127,17 +111,15 @@ try:
         if streak_count >= STABLE_FRAMES and not saved_text:
             if window_start is None:
                 window_start = time.time()
-            if window_best is None or det[1] > window_best[1][1]:
-                window_best = (clean.copy(), det)       # keep the raw best
+            if window_best is None or det[1] > window_best[2][1]:
+                window_best = (clean.copy(), results, det)   # keep the raw best
             if time.time() - window_start >= BEST_WINDOW:
                 path, ok = save_photo(*window_best)
                 saved_text = f"SAVED OK: {path.name}" if ok else "SAVE FAILED - press p"
                 print(saved_text)
 
         # Draw the live view.
-        view = clean.copy()
-        if det:
-            draw_detection(view, det)
+        view = ident.draw(clean.copy(), results)
         cv2.putText(view, f"Battery {tello.get_battery()}%  Height {tello.get_height()}cm",
                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         cv2.putText(view, status, (10, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
@@ -168,7 +150,7 @@ try:
             current_move = (0, 0, 0, 0)
         elif key == ord("p"):                       # manual backup save
             if det:
-                path, ok = save_photo(clean, det)
+                path, ok = save_photo(clean, results, det)
                 saved_text = f"SAVED OK: {path.name}" if ok else "SAVE FAILED"
             else:
                 saved_text = ""
